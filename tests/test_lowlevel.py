@@ -189,6 +189,44 @@ def test_digestauth_401_count_reset_on_redirect():
         close_server.set()
 
 
+@pytest.mark.parametrize("qop", ["auth", "auth, auth-int", "auth-int, auth"])
+def test_digestauth_qop_list_selects_auth(qop):
+    """A qop list such as "auth-int, auth" must still select "auth".
+
+    Servers commonly send the qop list with ", " separators (RFC 7616);
+    the token comparison must ignore the whitespace after each comma.
+    """
+    auth = requests.auth.HTTPDigestAuth("user", "pass")
+    auth.init_per_thread_state()
+    auth._thread_local.chal = {
+        "realm": "me@kennethreitz.com",
+        "nonce": "6bf5d6e4da1ce66918800195d6b9130d",
+        "qop": qop,
+        "algorithm": "MD5",
+        "opaque": "372825293d1c26955496c80ed6426e9e",
+    }
+
+    header = auth.build_digest_header("GET", "http://example.com/")
+
+    assert header is not None
+    assert 'qop="auth"' in header
+
+
+def test_digestauth_qop_without_auth_returns_none():
+    """A challenge offering only auth-int is not handled and returns None."""
+    auth = requests.auth.HTTPDigestAuth("user", "pass")
+    auth.init_per_thread_state()
+    auth._thread_local.chal = {
+        "realm": "me@kennethreitz.com",
+        "nonce": "6bf5d6e4da1ce66918800195d6b9130d",
+        "qop": "auth-int",
+        "algorithm": "MD5",
+        "opaque": "372825293d1c26955496c80ed6426e9e",
+    }
+
+    assert auth.build_digest_header("GET", "http://example.com/") is None
+
+
 def test_digestauth_401_only_sent_once():
     """Ensure we correctly respond to a 401 challenge once, and then
     stop responding if challenged again.
