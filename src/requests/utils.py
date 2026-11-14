@@ -583,6 +583,9 @@ def get_encoding_from_headers(headers: CaseInsensitiveDict[str]) -> str | None:
     if "charset" in params:
         return params["charset"].strip("'\"")
 
+    # Media types are case-insensitive (RFC 9110, Section 8.3.1).
+    content_type = content_type.lower()
+
     if "text" in content_type:
         return "ISO-8859-1"
 

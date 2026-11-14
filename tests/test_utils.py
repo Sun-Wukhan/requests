@@ -649,6 +649,14 @@ def test__parse_content_type_header(value, expected):
             CaseInsensitiveDict({"content-type": "text/html; charset"}),
             "ISO-8859-1",
         ),
+        # Media types are case-insensitive (RFC 9110, Section 8.3.1).
+        (CaseInsensitiveDict({"content-type": "TEXT/PLAIN"}), "ISO-8859-1"),
+        (CaseInsensitiveDict({"content-type": "Text/Plain"}), "ISO-8859-1"),
+        (CaseInsensitiveDict({"content-type": "APPLICATION/JSON"}), "utf-8"),
+        (
+            CaseInsensitiveDict({"content-type": "TEXT/PLAIN; charset=UTF-8"}),
+            "UTF-8",
+        ),
     ),
 )
 def test_get_encoding_from_headers(value, expected):
